@@ -1,0 +1,195 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: localtelegram-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-localtelegram}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-localtelegram123}
+      POSTGRES_DB: ${POSTGRES_DB:-localtelegram}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-localtelegram} -d ${POSTGRES_DB:-localtelegram}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - localtelegram-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: localtelegram-redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis123}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis123}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - localtelegram-network
+
+  # MinIO Object Storage (S3-compatible)
+  minio:
+    image: minio/minio:latest
+    container_name: localtelegram-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - localtelegram-network
+
+  # RabbitMQ Message Queue
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: localtelegram-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-localtelegram}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-rabbitmq123}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - localtelegram-network
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: localtelegram-nginx
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./infra/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./infra/nginx/ssl:/etc/nginx/ssl:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - api-gateway
+    networks:
+      - localtelegram-network
+
+  # API Gateway (YARP-based)
+  api-gateway:
+    build:
+      context: ./src/server/ApiGateway
+      dockerfile: Dockerfile
+    container_name: localtelegram-gateway
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5000
+    ports:
+      - "5000:5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - localtelegram-network
+
+  # Auth Service
+  auth-service:
+    build:
+      context: ./src/server/AuthService
+      dockerfile: Dockerfile
+    container_name: localtelegram-auth
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5001
+      - ConnectionStrings__Postgres=Host=postgres;Database=localtelegram;Username=${POSTGRES_USER:-localtelegram};Password=${POSTGRES_PASSWORD:-localtelegram123}
+      - Redis__Connection=redis:6379,password=${REDIS_PASSWORD:-redis123}
+    ports:
+      - "5001:5001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - localtelegram-network
+
+  # Message Service
+  message-service:
+    build:
+      context: ./src/server/MessageService
+      dockerfile: Dockerfile
+    container_name: localtelegram-message
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5002
+      - ConnectionStrings__Postgres=Host=postgres;Database=localtelegram;Username=${POSTGRES_USER:-localtelegram};Password=${POSTGRES_PASSWORD:-localtelegram123}
+      - Redis__Connection=redis:6379,password=${REDIS_PASSWORD:-redis123}
+      - RabbitMQ__Connection=host=rabbitmq;username=${RABBITMQ_USER:-localtelegram};password=${RABBITMQ_PASSWORD:-rabbitmq123}
+    ports:
+      - "5002:5002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - localtelegram-network
+
+  # File Service
+  file-service:
+    build:
+      context: ./src/server/FileService
+      dockerfile: Dockerfile
+    container_name: localtelegram-file
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5003
+      - ConnectionStrings__Postgres=Host=postgres;Database=localtelegram;Username=${POSTGRES_USER:-localtelegram};Password=${POSTGRES_PASSWORD:-localtelegram123}
+      - MinIO__Endpoint=minio:9000
+      - MinIO__AccessKey=${MINIO_ROOT_USER:-minioadmin}
+      - MinIO__SecretKey=${MINIO_ROOT_PASSWORD:-minioadmin123}
+      - MinIO__UseSSL=false
+    ports:
+      - "5003:5003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - localtelegram-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  rabbitmq_data:
+
+networks:
+  localtelegram-network:
+    driver: bridge

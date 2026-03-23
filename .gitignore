@@ -359,3 +359,6 @@ Thumbs.db
 
 # Uploaded files (development)
 uploads/
+
+# External repositories (cloned separately)
+external/

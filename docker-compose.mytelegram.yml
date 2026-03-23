@@ -1,0 +1,221 @@
+# LocalTelegram - MyTelegram Server Configuration
+# Based on mytelegram project: https://github.com/loyldg/mytelegram
+# This configuration uses pre-built mytelegram Docker images
+
+networks:
+  tg-net:
+    driver: bridge
+
+services:
+  ### Redis - Caching and session storage
+  redis:
+    image: redis:8-alpine
+    restart: always
+    networks:
+      - tg-net
+    volumes:
+      - ./data/redis:/data
+    command: ["redis-server", "--appendonly", "yes", "--save", "60", "1000"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  ### RabbitMQ - Message queue
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    restart: always
+    networks:
+      - tg-net
+    ports:
+      - "15672:15672"  # Management UI
+    volumes:
+      - ./data/rabbitmq:/var/lib/rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-localtelegram}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-localtelegram123}
+      RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_COOKIE:-localtelegram-cookie}
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ### MongoDB - Primary database
+  mongodb:
+    image: mongo:8
+    restart: always
+    networks:
+      - tg-net
+    command: ["mongod", "--quiet", "--logpath", "/dev/null", "--logappend"]
+    volumes:
+      - ./data/mongo/db:/data/db
+      - ./data/mongo/configdb:/data/configdb
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand({ ping: 1 })"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ### MinIO - Object storage for files
+  minio:
+    image: minio/minio:latest
+    restart: always
+    networks:
+      - tg-net
+    ports:
+      - "9001:9001"  # Console UI
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-localtelegram}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-localtelegram123456}
+    volumes:
+      - ./data/minio:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  ################### MyTelegram Server Services
+
+  ### Data Seeder - Initializes database
+  data-seeder:
+    image: ${MYTELEGRAM_REGISTRY:-mytelegram}/mytelegram-data-seeder:${MYTELEGRAM_VERSION:-latest}
+    restart: "no"
+    networks:
+      - tg-net
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__Default: mongodb://mongodb:27017
+      App__DatabaseName: ${DB_NAME:-localtelegram}
+      Redis__Configuration: redis:6379
+
+  ### Auth Server - Authentication service
+  auth-server:
+    image: ${MYTELEGRAM_REGISTRY:-mytelegram}/mytelegram-auth-server:${MYTELEGRAM_VERSION:-latest}
+    restart: always
+    networks:
+      - tg-net
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    ports:
+      - "20443:20443"
+    environment:
+      ConnectionStrings__Default: mongodb://mongodb:27017
+      App__DatabaseName: ${DB_NAME:-localtelegram}
+      Redis__Configuration: redis:6379
+      RabbitMQ__Connections__Default__HostName: rabbitmq
+      RabbitMQ__Connections__Default__Port: 5672
+      RabbitMQ__Connections__Default__UserName: ${RABBITMQ_USER:-localtelegram}
+      RabbitMQ__Connections__Default__Password: ${RABBITMQ_PASSWORD:-localtelegram123}
+      App__FixedVerifyCode: ${VERIFY_CODE:-22222}
+      App__DcOptions__0__IpAddress: ${SERVER_IP:-127.0.0.1}
+      App__DcOptions__0__Port: 20443
+      App__DcOptions__0__Enabled: "true"
+      App__AccessHashSecretKey: ${ACCESS_HASH_SECRET:-LocalTelegramSecretKey12345678901234}
+
+  ### Gateway Server - MTProto gateway
+  gateway-server:
+    image: ${MYTELEGRAM_REGISTRY:-mytelegram}/mytelegram-gateway-server:${MYTELEGRAM_VERSION:-latest}
+    restart: always
+    networks:
+      - tg-net
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    ports:
+      - "20543:20543"
+    environment:
+      ConnectionStrings__Default: mongodb://mongodb:27017
+      App__DatabaseName: ${DB_NAME:-localtelegram}
+      Redis__Configuration: redis:6379
+      RabbitMQ__Connections__Default__HostName: rabbitmq
+      RabbitMQ__Connections__Default__Port: 5672
+      RabbitMQ__Connections__Default__UserName: ${RABBITMQ_USER:-localtelegram}
+      RabbitMQ__Connections__Default__Password: ${RABBITMQ_PASSWORD:-localtelegram123}
+      App__DcOptions__0__IpAddress: ${SERVER_IP:-127.0.0.1}
+      App__DcOptions__0__Port: 20543
+      App__DcOptions__0__Enabled: "true"
+
+  ### Messenger Server - Message handling
+  messenger-server:
+    image: ${MYTELEGRAM_REGISTRY:-mytelegram}/mytelegram-messenger-server:${MYTELEGRAM_VERSION:-latest}
+    restart: always
+    networks:
+      - tg-net
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__Default: mongodb://mongodb:27017
+      App__DatabaseName: ${DB_NAME:-localtelegram}
+      Redis__Configuration: redis:6379
+      RabbitMQ__Connections__Default__HostName: rabbitmq
+      RabbitMQ__Connections__Default__Port: 5672
+      RabbitMQ__Connections__Default__UserName: ${RABBITMQ_USER:-localtelegram}
+      RabbitMQ__Connections__Default__Password: ${RABBITMQ_PASSWORD:-localtelegram123}
+
+  ### File Server - File upload/download
+  file-server:
+    image: ${MYTELEGRAM_REGISTRY:-mytelegram}/mytelegram-file-server:${MYTELEGRAM_VERSION:-latest}
+    restart: always
+    networks:
+      - tg-net
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    ports:
+      - "20643:20643"
+    environment:
+      ConnectionStrings__Default: mongodb://mongodb:27017
+      App__DatabaseName: ${DB_NAME:-localtelegram}
+      Redis__Configuration: redis:6379
+      Minio__Endpoint: minio:9000
+      Minio__AccessKey: ${MINIO_ACCESS_KEY:-localtelegram}
+      Minio__SecretKey: ${MINIO_SECRET_KEY:-localtelegram123456}
+      App__DcOptions__0__IpAddress: ${SERVER_IP:-127.0.0.1}
+      App__DcOptions__0__Port: 20643
+      App__DcOptions__0__Enabled: "true"
+      App__DcOptions__0__MediaOnly: "true"
+
+  ### Frontend Proxy (Optional - for web access)
+  nginx:
+    image: nginx:alpine
+    restart: always
+    networks:
+      - tg-net
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./infra/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./data/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - auth-server
+      - gateway-server
+      - messenger-server
+      - file-server

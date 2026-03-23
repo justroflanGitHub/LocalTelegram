@@ -6,12 +6,14 @@
 
 **LocalTelegram** is a self-hosted messaging system that runs on your own infrastructure, providing complete control over your data and communications. The system is independent of external cloud services and supports unlimited file sizes.
 
+This project is based on [MyTelegram](https://github.com/loyldg/mytelegram) - a C# implementation of the Telegram server-side API.
+
 ## Features
 
 - **Autonomy**: Complete independence from external servers and cloud services
 - **Data Control**: All data stored on your organization's servers
 - **No Limits**: Send files of any size
-- **Conferences**: Audio and video calls, screen sharing
+- **Conferences**: Audio and video calls, screen sharing (Pro version)
 - **Cross-platform**: Windows and Android clients
 
 ## Architecture
@@ -25,182 +27,152 @@
 │       C++ / Qt 6        │          Kotlin / Java                 │
 └────────────┬────────────┴───────────────┬───────────────────────┘
              │                            │
-             │     MTProto / WebSocket     │
+             │     MTProto Protocol       │
              │                            │
              ▼                            ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                      API GATEWAY                                 │
-│                  (Reverse Proxy + Auth)                          │
+│                    MYTELEGRAM SERVER                             │
+├─────────────────────────────────────────────────────────────────┤
+│  Auth Server  │  Gateway Server  │  Messenger  │  File Server   │
+│    :20443     │      :20543      │   (internal)│     :20643     │
 └────────────────────────────┬────────────────────────────────────┘
                              │
-         ┌───────────────────┼───────────────────┐
-         │                   │                   │
-         ▼                   ▼                   ▼
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│Auth Service │     │Msg Service  │     │File Service │
-│             │     │             │     │             │
-│ - Register  │     │ - Send      │     │ - Upload    │
-│ - Login     │     │ - Receive   │     │ - Download  │
-│ - Sessions  │     │ - History   │     │ - Storage   │
-└──────┬──────┘     └──────┬──────┘     └──────┬──────┘
-       │                   │                   │
-       ▼                   ▼                   ▼
+                             ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                       DATA LAYER                                 │
 ├─────────────┬─────────────┬─────────────┬───────────────────────┤
-│ PostgreSQL  │    Redis    │   MinIO     │      RabbitMQ         │
+│   MongoDB   │    Redis    │   MinIO     │      RabbitMQ         │
 │  (Main DB)  │   (Cache)   │  (Files)    │     (Queues)          │
 └─────────────┴─────────────┴─────────────┴───────────────────────┘
 ```
 
 ## Quick Start
 
-### Prerequisites
+### Option 1: Using Pre-built MyTelegram Images (Recommended)
 
-- Docker and Docker Compose
-- .NET 8 SDK (for development)
-- Git
-
-### Development Setup
-
-1. **Clone the repository**
+1. **Copy environment configuration**
    ```bash
-   git clone https://github.com/your-org/localtelegram.git
-   cd localtelegram
+   cp .env.mytelegram .env
    ```
 
-2. **Copy environment configuration**
+2. **Edit `.env` - Set your server IP**
+   ```bash
+   # Change this to your server's IP address
+   SERVER_IP=192.168.1.100
+   ```
+
+3. **Create data directories**
+   ```bash
+   mkdir -p data/redis data/rabbitmq data/mongo/db data/mongo/configdb data/minio
+   ```
+
+4. **Start the services**
+   ```bash
+   docker-compose -f docker-compose.mytelegram.yml up -d
+   ```
+
+5. **Check service status**
+   ```bash
+   docker-compose -f docker-compose.mytelegram.yml ps
+   ```
+
+### Option 2: Custom .NET Implementation
+
+See [docs/CLIENT_CONFIGURATION.md](docs/CLIENT_CONFIGURATION.md) for details on the custom microservices implementation.
+
+1. **Copy environment configuration**
    ```bash
    cp .env.example .env
    ```
 
-3. **Edit `.env` with your settings**
-   - Change default passwords
-   - Set JWT secret
-   - Configure other settings as needed
-
-4. **Start infrastructure services**
+2. **Start infrastructure services**
    ```bash
    docker-compose up -d postgres redis minio rabbitmq
    ```
 
-5. **Run database migrations**
-   The database schema will be automatically created when the PostgreSQL container starts.
-
-6. **Start the services**
+3. **Start the services**
    ```bash
    docker-compose up -d
    ```
 
-### Service URLs
+## Service URLs
 
 | Service | URL | Description |
 |---------|-----|-------------|
-| API Gateway | http://localhost:5000 | Main API entry point |
-| Auth Service | http://localhost:5001 | Authentication API |
-| Message Service | http://localhost:5002 | Messaging API |
-| File Service | http://localhost:5003 | File upload/download |
-| MinIO Console | http://localhost:9001 | Object storage management |
+| Auth Server | Port 20443 | Authentication (MTProto) |
+| Gateway Server | Port 20543 | MTProto Gateway |
+| File Server | Port 20643 | File upload/download |
 | RabbitMQ Management | http://localhost:15672 | Message queue management |
+| MinIO Console | http://localhost:9001 | Object storage management |
 
-### API Documentation
+## Client Setup
 
-Each service provides Swagger documentation:
-- API Gateway: http://localhost:5000/swagger
-- Auth Service: http://localhost:5001/swagger
-- Message Service: http://localhost:5002/swagger
-- File Service: http://localhost:5003/swagger
+### Windows Client (tdesktop)
+
+1. Clone the modified client:
+   ```bash
+   git clone https://github.com/loyldg/mytelegram-tdesktop.git
+   ```
+
+2. Edit `Telegram/SourceFiles/mtproto/mtproto_dc_options.cpp`:
+   ```cpp
+   #define IpV4 "YOUR_SERVER_IP"  // Change 192.168.1.100 to your IP
+   #define IpV4Port 20443
+   ```
+
+3. Build the client (requires Visual Studio, CMake, Qt 6)
+
+See [docs/CLIENT_CONFIGURATION.md](docs/CLIENT_CONFIGURATION.md) for detailed build instructions.
+
+### Android Client
+
+1. Clone the modified client:
+   ```bash
+   git clone https://github.com/loyldg/mytelegram-android.git
+   ```
+
+2. Search for `192.168.1.100` and replace with your server IP
+
+3. Build APK using Android Studio
+
+## Testing
+
+### Default Verification Code
+
+For testing, use verification code: **22222**
+
+1. Open the client
+2. Enter any phone number (e.g., +1234567890)
+3. Enter verification code: **22222**
+4. You should be logged in
 
 ## Project Structure
 
 ```
 LocalTelegram/
-├── docker-compose.yml          # Docker Compose configuration
-├── .env.example                # Environment variables template
+├── docker-compose.mytelegram.yml  # MyTelegram server configuration
+├── docker-compose.yml             # Custom .NET services configuration
+├── .env.mytelegram                # MyTelegram environment config
+├── .env.example                   # Custom services environment config
+├── docs/
+│   └── CLIENT_CONFIGURATION.md    # Client build instructions
 ├── infra/
 │   ├── postgres/
 │   │   └── init/
-│   │       └── 001_init_schema.sql  # Database schema
+│   │       └── 001_init_schema.sql  # Database schema (custom)
 │   └── nginx/
-│       ├── nginx.conf          # Nginx main configuration
 │       └── conf.d/
-│           └── default.conf    # Site configuration
+│           └── default.conf       # Reverse proxy config
+├── external/                      # Cloned repositories (gitignored)
+│   ├── mytelegram/                # Server source
+│   ├── mytelegram-tdesktop/       # Windows client
+│   └── mytelegram-android/        # Android client
 └── src/
-    └── server/
-        ├── ApiGateway/         # API Gateway service (YARP)
-        ├── AuthService/        # Authentication service
-        ├── MessageService/     # Messaging service
-        └── FileService/        # File storage service
-```
-
-## API Endpoints
-
-### Auth Service
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | /api/auth/register | Register new user |
-| POST | /api/auth/login | Login |
-| POST | /api/auth/refresh | Refresh access token |
-| POST | /api/auth/logout | Logout current session |
-| GET | /api/auth/me | Get current user |
-| PUT | /api/auth/me | Update profile |
-| POST | /api/auth/change-password | Change password |
-
-### Message Service
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | /api/chats | Get user's chats |
-| POST | /api/chats | Create new chat |
-| GET | /api/chats/{id} | Get chat details |
-| PUT | /api/chats/{id} | Update chat |
-| DELETE | /api/chats/{id} | Delete chat |
-| POST | /api/chats/{id}/members | Add member |
-| DELETE | /api/chats/{id}/members/{userId} | Remove member |
-| POST | /api/messages | Send message |
-| GET | /api/messages/chat/{chatId} | Get chat messages |
-| PUT | /api/messages/{id} | Edit message |
-| DELETE | /api/messages/{id} | Delete message |
-
-### File Service
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | /api/files | Upload file |
-| GET | /api/files/{id} | Get file metadata |
-| GET | /api/files/{id}/download | Download file |
-| GET | /api/files/{id}/url | Get presigned URL |
-| DELETE | /api/files/{id} | Delete file |
-
-## Development
-
-### Building Services
-
-```bash
-# Build all services
-docker-compose build
-
-# Build specific service
-docker-compose build auth-service
-```
-
-### Running Tests
-
-```bash
-# TODO: Add test commands
-```
-
-### Database Migrations
-
-The database schema is automatically applied when the PostgreSQL container starts. For manual migrations:
-
-```bash
-# Connect to PostgreSQL
-docker-compose exec postgres psql -U localtelegram -d localtelegram
-
-# Run schema manually
-\i /docker-entrypoint-initdb.d/001_init_schema.sql
+    └── server/                    # Custom .NET services
+        ├── ApiGateway/
+        ├── AuthService/
+        ├── MessageService/
+        └── FileService/
 ```
 
 ## Configuration
@@ -209,35 +181,52 @@ docker-compose exec postgres psql -U localtelegram -d localtelegram
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| POSTGRES_USER | PostgreSQL username | localtelegram |
-| POSTGRES_PASSWORD | PostgreSQL password | localtelegram123 |
-| POSTGRES_DB | Database name | localtelegram |
-| REDIS_PASSWORD | Redis password | redis123 |
-| MINIO_ROOT_USER | MinIO access key | minioadmin |
-| MINIO_ROOT_PASSWORD | MinIO secret key | minioadmin123 |
+| SERVER_IP | Your server's IP address | 127.0.0.1 |
+| VERIFY_CODE | Fixed test verification code | 22222 |
+| DB_NAME | MongoDB database name | localtelegram |
+| MINIO_ACCESS_KEY | MinIO access key | localtelegram |
+| MINIO_SECRET_KEY | MinIO secret key | localtelegram123456 |
 | RABBITMQ_USER | RabbitMQ username | localtelegram |
-| RABBITMQ_PASSWORD | RabbitMQ password | rabbitmq123 |
-| JWT_SECRET | JWT signing key | (change in production!) |
+| RABBITMQ_PASSWORD | RabbitMQ password | localtelegram123 |
 
 ### Security Notes
 
 1. **Change all default passwords** before deploying to production
-2. Use strong JWT secret (at least 32 characters)
+2. **Update SERVER_IP** to your actual server address
 3. Enable SSL/TLS in production
 4. Configure firewall rules appropriately
-5. Review and update rate limiting settings
+5. Change `ACCESS_HASH_SECRET` to a unique value
+
+## Supported Features
+
+### Open Source (Free)
+- API Layer: 222
+- MTProto Transports: Abridged, Intermediate
+- Private Chat
+- Supergroup Chat
+- Channel
+
+### Pro Version (Paid)
+- End-to-End Encrypted Chat
+- Voice & Video Calls
+- Bot Support
+- Privacy Settings & 2FA
+- Stickers
+- Reactions
+- Forum Topics
+- Scheduled Messages
+- And more...
 
 ## Roadmap
 
 ### Phase 1: Basic Infrastructure (Current)
 - [x] Project structure
-- [x] Docker Compose setup
-- [x] Database schema
-- [x] Auth Service
-- [x] Message Service
-- [x] File Service
-- [ ] Windows Client
-- [ ] Android Client
+- [x] Docker Compose setup (MyTelegram)
+- [x] Server configuration
+- [x] Client configuration documentation
+- [ ] Build Windows client
+- [ ] Build Android client
+- [ ] Integration testing
 
 ### Phase 2: Core Features
 - [ ] Group chats
@@ -260,6 +249,40 @@ docker-compose exec postgres psql -U localtelegram -d localtelegram
 - [ ] Two-factor authentication
 - [ ] Audit logging
 
+## Building MyTelegram Server from Source
+
+If you want to build the server from source instead of using pre-built images:
+
+```bash
+cd external/mytelegram
+
+# Build Docker images
+./scripts/build-all-amd64.sh  # Linux/amd64
+# or
+./scripts/build-all-arm64.sh  # Linux/arm64
+
+# Update docker-compose to use local images
+# Set MYTELEGRAM_REGISTRY=local in .env
+```
+
+## Troubleshooting
+
+### Connection Failed
+- Verify server is running: `docker-compose -f docker-compose.mytelegram.yml ps`
+- Check logs: `docker-compose -f docker-compose.mytelegram.yml logs auth-server`
+- Verify firewall allows ports 20443, 20543, 20643
+- Verify IP address in client matches server IP
+
+### Authentication Failed
+- Check auth-server logs
+- Verify verification code is correct (default: 22222)
+- Try with a different phone number
+
+### File Upload Issues
+- Check file-server logs
+- Verify MinIO is running
+- Check MinIO console at http://localhost:9001
+
 ## Contributing
 
 1. Fork the repository
@@ -274,6 +297,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Acknowledgments
 
-- [telegramdesktop/tdesktop](https://github.com/telegramdesktop/tdesktop) - Windows client base
-- [Telegram-FOSS-Team/Telegram-FOSS](https://github.com/Telegram-FOSS-Team/Telegram-FOSS) - Android client base
-- [loyldg/mytelegram](https://github.com/loyldg/mytelegram) - Server implementation reference
+- [loyldg/mytelegram](https://github.com/loyldg/mytelegram) - Server implementation
+- [loyldg/mytelegram-tdesktop](https://github.com/loyldg/mytelegram-tdesktop) - Windows client
+- [loyldg/mytelegram-android](https://github.com/loyldg/mytelegram-android) - Android client
+- [telegramdesktop/tdesktop](https://github.com/telegramdesktop/tdesktop) - Original Windows client
+- [Telegram-FOSS-Team/Telegram-FOSS](https://github.com/Telegram-FOSS-Team/Telegram-FOSS) - Original Android FOSS client

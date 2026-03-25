@@ -54,6 +54,12 @@ try
 
     // File service
     builder.Services.AddScoped<IFileService, Services.FileService>();
+    
+    // Voice message service
+    builder.Services.AddScoped<IVoiceMessageService, VoiceMessageService>();
+    
+    // Image processing service
+    builder.Services.AddScoped<IImageProcessingService, ImageProcessingService>();
 
     // JWT configuration
     var jwtSettings = builder.Configuration.GetSection("Jwt");

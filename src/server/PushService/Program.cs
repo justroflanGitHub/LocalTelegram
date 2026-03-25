@@ -96,6 +96,8 @@ builder.Services.AddSingleton<IRedisService, RedisService>();
 builder.Services.AddSingleton<IRabbitMqService, RabbitMqService>();
 builder.Services.AddSingleton<INotificationService, NotificationService>();
 builder.Services.AddSingleton<IDeviceRegistrationService, DeviceRegistrationService>();
+builder.Services.AddSingleton<IChatMuteService, ChatMuteService>();
+builder.Services.AddSingleton<IBadgeCountService, BadgeCountService>();
 
 // Configure CORS
 builder.Services.AddCors(options =>

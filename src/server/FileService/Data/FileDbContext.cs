@@ -10,6 +10,7 @@ public class FileDbContext : DbContext
     }
 
     public DbSet<FileMetadata> Files => Set<FileMetadata>();
+    public DbSet<VoiceMessage> VoiceMessages => Set<VoiceMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -37,6 +38,30 @@ public class FileDbContext : DbContext
 
             entity.HasIndex(e => e.UploaderId);
             entity.HasIndex(e => e.Checksum);
+        });
+
+        // VoiceMessage entity
+        modelBuilder.Entity<VoiceMessage>(entity =>
+        {
+            entity.ToTable("voice_messages");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+            entity.Property(e => e.FileId).HasColumnName("file_id").IsRequired();
+            entity.Property(e => e.DurationSeconds).HasColumnName("duration_seconds").IsRequired();
+            entity.Property(e => e.Waveform).HasColumnName("waveform").IsRequired();
+            entity.Property(e => e.Codec).HasColumnName("codec").HasMaxLength(20).HasDefaultValue("opus");
+            entity.Property(e => e.SampleRate).HasColumnName("sample_rate").HasDefaultValue(48000);
+            entity.Property(e => e.Channels).HasColumnName("channels").HasDefaultValue(1);
+            entity.Property(e => e.Bitrate).HasColumnName("bitrate").HasDefaultValue(64000);
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.HasOne(e => e.File)
+                .WithMany()
+                .HasForeignKey(e => e.FileId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => e.FileId);
         });
     }
 }

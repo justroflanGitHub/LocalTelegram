@@ -574,10 +574,10 @@
 - [ ] Протестировать SSO flow
 
 ### 5.1.3 Инвайт-система
-- [ ] Реализовать инвайт по email
-- [ ] Добавить инвайт по ссылке
-- [ ] Реализовать автоматическое добавление в группы
-- [ ] Добавить welcome messages
+- [x] Реализовать инвайт по email
+- [x] Добавить инвайт по ссылке
+- [x] Реализовать автоматическое добавление в группы
+- [x] Добавить welcome messages
 
 ## 5.2 Администрирование
 
@@ -596,9 +596,9 @@
 - [x] Добавить настройки системы
 
 ### 5.2.3 Модерация
-- [ ] Добавить report functionality
-- [ ] Реализовать review queue
-- [ ] Добавить content moderation tools
+- [x] Добавить report functionality
+- [x] Реализовать review queue
+- [x] Добавить content moderation tools
 - [x] Реализовать audit log
 
 ## 5.3 Безопасность
@@ -611,15 +611,15 @@
 
 ### 5.3.2 Усиление безопасности
 - [ ] Добавить certificate pinning в клиенты
-- [ ] Реализовать 2FA
-- [ ] Добавить device management
-- [ ] Реализовать session revocation
-- [ ] Добавить security audit log
-- [ ] Реализовать rate limiting на уровне API
+- [x] Реализовать 2FA
+- [x] Добавить device management
+- [x] Реализовать session revocation
+- [x] Добавить security audit log
+- [x] Реализовать rate limiting на уровне API
 
 ### 5.3.3 Compliance
-- [ ] Добавить data retention policies
-- [ ] Реализовать GDPR tools (export, delete)
+- [x] Добавить data retention policies
+- [x] Реализовать GDPR tools (export, delete)
 - [ ] Добавить privacy settings
 - [ ] Документировать compliance
 
@@ -634,9 +634,9 @@
 
 ### 5.4.2 Logging
 - [ ] Настроить centralized logging (ELK/Loki)
-- [ ] Добавить structured logging
+- [x] Добавить structured logging
 - [ ] Реализовать log rotation
-- [ ] Добавить sensitive data masking
+- [x] Добавить sensitive data masking
 
 ### 5.4.3 Tracing
 - [ ] Добавить distributed tracing

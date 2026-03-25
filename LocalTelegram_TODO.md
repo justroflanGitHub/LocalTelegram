@@ -464,66 +464,66 @@
 ### 4.2.1 Аудиозвонки 1-на-1
 - [ ] Реализовать UI для аудиозвонков
 - [ ] Добавить call screen
-- [ ] Реализовать WebRTC audio
-- [ ] Добавить mute/unmute
-- [ ] Реализовать end call
+- [x] Реализовать WebRTC audio (SignallingClient, WebRtcManager, CallManager)
+- [x] Добавить mute/unmute
+- [x] Реализовать end call
 - [ ] Добавить ringtone
 
 ### 4.2.2 Видеозвонки 1-на-1
 - [ ] Реализовать UI для видеозвонков
-- [ ] Добавить local video preview
-- [ ] Реализовать remote video display
-- [ ] Добавить camera switch
-- [ ] Реализовать camera on/off
+- [x] Добавить local video preview (WebRtcManager)
+- [x] Реализовать remote video display (WebRtcManager callbacks)
+- [x] Добавить camera switch (device enumeration)
+- [x] Реализовать camera on/off
 - [ ] Добавить fullscreen video
 
 ### 4.2.3 Групповые голосовые чаты
 - [ ] Добавить UI для голосового чата в группе
-- [ ] Реализовать список участников
+- [x] Реализовать список участников (RoomParticipant tracking)
 - [ ] Добавить raise hand функцию
-- [ ] Реализовать управление участниками (для админов)
+- [x] Реализовать управление участниками (для админов)
 - [ ] Добавить визуализацию говорящего
 
 ### 4.2.4 Видеоконференции
 - [ ] Реализовать UI видеоконференции
 - [ ] Добавить grid layout для видео
 - [ ] Реализовать speaker view
-- [ ] Добавить управление участниками
+- [x] Добавить управление участниками
 - [ ] Реализовать chat during call
 
 ### 4.2.5 Демонстрация экрана
-- [ ] Исследовать Windows Graphics Capture API
-- [ ] Реализовать захват экрана
-- [ ] Добавить выбор монитора/окна
-- [ ] Реализовать sharing в звонке
+- [x] Исследовать Windows Graphics Capture API
+- [x] Реализовать захват экрана (WebRtcManager::startScreenShare)
+- [x] Добавить выбор монитора/окна
+- [x] Реализовать sharing в звонке
 - [ ] Оптимизировать производительность
 - [ ] Добавить pause/resume sharing
 
 ### 4.2.6 Оптимизация
 - [ ] Оптимизировать потребление CPU
 - [ ] Добавить адаптивное качество
-- [ ] Реализовать echo cancellation
-- [ ] Добавить noise suppression
+- [x] Реализовать echo cancellation (WebRTC built-in)
+- [x] Добавить noise suppression (WebRTC built-in)
 
 ## 4.3 Android-клиент
 
 ### 4.3.1 Аудиозвонки 1-на-1
 - [ ] Реализовать UI для аудиозвонков
 - [ ] Добавить call notification
-- [ ] Реализовать WebRTC audio
+- [x] Реализовать WebRTC audio (SignallingClient, WebRtcManager, CallManager)
 - [ ] Добавить background call service
 - [ ] Реализовать call controls (notification)
 
 ### 4.3.2 Видеозвонки 1-на-1
 - [ ] Реализовать UI для видеозвонков
-- [ ] Добавить local video preview
-- [ ] Реализовать remote video
-- [ ] Добавить camera switch
+- [x] Добавить local video preview (WebRtcManager)
+- [x] Реализовать remote video (WebRtcManager callbacks)
+- [x] Добавить camera switch (device enumeration)
 - [ ] Оптимизировать энергопотребление
 
 ### 4.3.3 Групповые голосовые чаты
 - [ ] Добавить UI голосового чата
-- [ ] Реализовать список участников
+- [x] Реализовать список участников (RoomParticipant tracking)
 - [ ] Добавить визуализацию говорящего
 - [ ] Реализовать background audio
 
@@ -534,9 +534,9 @@
 - [ ] Оптимизировать для планшетов
 
 ### 4.3.5 Демонстрация экрана (Android)
-- [ ] Реализовать MediaProjection API
+- [x] Реализовать MediaProjection API (WebRtcManager::startScreenShare)
 - [ ] Добавить выбор что шарить
-- [ ] Реализовать sharing в звонке
+- [x] Реализовать sharing в звонке
 - [ ] Добавить permission handling
 
 ## 4.4 Тестирование Фазы 4

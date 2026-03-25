@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: localtelegram-config
+  namespace: localtelegram
+data:
+  # MongoDB Settings
+  MONGODB_HOST: "mongodb"
+  MONGODB_PORT: "27017"
+  MONGODB_DATABASE: "localtelegram"
+  
+  # Redis Settings
+  REDIS_HOST: "redis"
+  REDIS_PORT: "6379"
+  
+  # RabbitMQ Settings
+  RABBITMQ_HOST: "rabbitmq"
+  RABBITMQ_PORT: "5672"
+  
+  # MinIO Settings
+  MINIO_ENDPOINT: "minio:9000"
+  MINIO_USE_SSL: "false"
+  
+  # Service URLs
+  AUTH_SERVICE_URL: "http://authservice:5001"
+  MESSAGE_SERVICE_URL: "http://messageservice:5002"
+  FILE_SERVICE_URL: "http://fileservice:5003"
+  PUSH_SERVICE_URL: "http://pushservice:5004"
+  CONFERENCE_SERVICE_URL: "http://conferenceservice:5005"
+  ADMIN_SERVICE_URL: "http://adminservice:5006"
+  MEDIA_SERVICE_URL: "http://mediaservice:5007"
+  
+  # LiveKit Settings
+  LIVEKIT_HOST: "livekit:7880"
+  
+  # TURN Server Settings
+  TURN_SERVER_URL: "turn:turnserver:3478"
+  
+  # JWT Settings
+  JWT_ISSUER: "LocalTelegram"
+  JWT_AUDIENCE: "LocalTelegram"
+  JWT_EXPIRATION_MINUTES: "60"
+  REFRESH_TOKEN_EXPIRATION_DAYS: "30"
+  
+  # File Upload Settings
+  MAX_FILE_SIZE_BYTES: "2147483648"
+  CHUNK_SIZE_BYTES: "5242880"
+  
+  # Rate Limiting
+  RATE_LIMIT_REQUESTS: "100"
+  RATE_LIMIT_WINDOW_SECONDS: "60"

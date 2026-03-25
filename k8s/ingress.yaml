@@ -1,0 +1,153 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: localtelegram-ingress
+  namespace: localtelegram
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "2048m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    # WebSocket support
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+    nginx.ingress.kubernetes.io/proxy-set-headers: |
+      Upgrade $http_upgrade;
+      Connection "upgrade";
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - telegram.local
+    - api.telegram.local
+    - admin.telegram.local
+    secretName: localtelegram-tls
+  rules:
+  # Main API Gateway
+  - host: api.telegram.local
+    http:
+      paths:
+      - path: /auth
+        pathType: Prefix
+        backend:
+          service:
+            name: authservice
+            port:
+              number: 5001
+      - path: /messages
+        pathType: Prefix
+        backend:
+          service:
+            name: messageservice
+            port:
+              number: 5002
+      - path: /files
+        pathType: Prefix
+        backend:
+          service:
+            name: fileservice
+            port:
+              number: 5003
+      - path: /push
+        pathType: Prefix
+        backend:
+          service:
+            name: pushservice
+            port:
+              number: 5004
+      - path: /conference
+        pathType: Prefix
+        backend:
+          service:
+            name: conferenceservice
+            port:
+              number: 5005
+      - path: /media
+        pathType: Prefix
+        backend:
+          service:
+            name: mediaservice
+            port:
+              number: 5007
+  
+  # Admin Panel
+  - host: admin.telegram.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: adminservice
+            port:
+              number: 5006
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: adminservice
+            port:
+              number: 5006
+---
+# MinIO API
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: minio-ingress
+  namespace: localtelegram
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-body-size: "2048m"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: storage.telegram.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: minio
+            port:
+              number: 9000
+---
+# MinIO Console
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: minio-console-ingress
+  namespace: localtelegram
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: minio-console.telegram.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: minio
+            port:
+              number: 9001
+---
+# RabbitMQ Management
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rabbitmq-ingress
+  namespace: localtelegram
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: rabbitmq.telegram.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: rabbitmq
+            port:
+              number: 15672

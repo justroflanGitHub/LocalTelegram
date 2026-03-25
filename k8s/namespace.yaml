@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: localtelegram
+  labels:
+    app.kubernetes.io/name: localtelegram
+    app.kubernetes.io/version: "1.0"

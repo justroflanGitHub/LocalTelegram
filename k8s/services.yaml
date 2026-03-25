@@ -1,0 +1,405 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: authservice
+  namespace: localtelegram
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: authservice
+  template:
+    metadata:
+      labels:
+        app: authservice
+    spec:
+      containers:
+      - name: authservice
+        image: localtelegram/authservice:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5001
+        envFrom:
+        - configMapRef:
+            name: localtelegram-config
+        - secretRef:
+            name: localtelegram-secrets
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5001
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 5001
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: authservice
+  namespace: localtelegram
+spec:
+  selector:
+    app: authservice
+  ports:
+  - port: 5001
+    targetPort: 5001
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: messageservice
+  namespace: localtelegram
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: messageservice
+  template:
+    metadata:
+      labels:
+        app: messageservice
+    spec:
+      containers:
+      - name: messageservice
+        image: localtelegram/messageservice:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5002
+        envFrom:
+        - configMapRef:
+            name: localtelegram-config
+        - secretRef:
+            name: localtelegram-secrets
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5002
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 5002
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: messageservice
+  namespace: localtelegram
+spec:
+  selector:
+    app: messageservice
+  ports:
+  - port: 5002
+    targetPort: 5002
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fileservice
+  namespace: localtelegram
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: fileservice
+  template:
+    metadata:
+      labels:
+        app: fileservice
+    spec:
+      containers:
+      - name: fileservice
+        image: localtelegram/fileservice:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5003
+        envFrom:
+        - configMapRef:
+            name: localtelegram-config
+        - secretRef:
+            name: localtelegram-secrets
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5003
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 5003
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fileservice
+  namespace: localtelegram
+spec:
+  selector:
+    app: fileservice
+  ports:
+  - port: 5003
+    targetPort: 5003
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pushservice
+  namespace: localtelegram
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: pushservice
+  template:
+    metadata:
+      labels:
+        app: pushservice
+    spec:
+      containers:
+      - name: pushservice
+        image: localtelegram/pushservice:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5004
+        envFrom:
+        - configMapRef:
+            name: localtelegram-config
+        - secretRef:
+            name: localtelegram-secrets
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5004
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 5004
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pushservice
+  namespace: localtelegram
+spec:
+  selector:
+    app: pushservice
+  ports:
+  - port: 5004
+    targetPort: 5004
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: conferenceservice
+  namespace: localtelegram
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: conferenceservice
+  template:
+    metadata:
+      labels:
+        app: conferenceservice
+    spec:
+      containers:
+      - name: conferenceservice
+        image: localtelegram/conferenceservice:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5005
+        envFrom:
+        - configMapRef:
+            name: localtelegram-config
+        - secretRef:
+            name: localtelegram-secrets
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5005
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 5005
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: conferenceservice
+  namespace: localtelegram
+spec:
+  selector:
+    app: conferenceservice
+  ports:
+  - port: 5005
+    targetPort: 5005
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: adminservice
+  namespace: localtelegram
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: adminservice
+  template:
+    metadata:
+      labels:
+        app: adminservice
+    spec:
+      containers:
+      - name: adminservice
+        image: localtelegram/adminservice:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5006
+        envFrom:
+        - configMapRef:
+            name: localtelegram-config
+        - secretRef:
+            name: localtelegram-secrets
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5006
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 5006
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: adminservice
+  namespace: localtelegram
+spec:
+  selector:
+    app: adminservice
+  ports:
+  - port: 5006
+    targetPort: 5006
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mediaservice
+  namespace: localtelegram
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mediaservice
+  template:
+    metadata:
+      labels:
+        app: mediaservice
+    spec:
+      containers:
+      - name: mediaservice
+        image: localtelegram/mediaservice:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5007
+        envFrom:
+        - configMapRef:
+            name: localtelegram-config
+        - secretRef:
+            name: localtelegram-secrets
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "200m"
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5007
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 5007
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mediaservice
+  namespace: localtelegram
+spec:
+  selector:
+    app: mediaservice
+  ports:
+  - port: 5007
+    targetPort: 5007

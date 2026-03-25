@@ -26,7 +26,7 @@
 - [x] Настроить Git-репозиторий для проекта
 - [x] Создать структуру директорий проекта
 - [x] Настроить Docker Compose для локальной разработки
-- [ ] Настроить CI/CD пайплайн (GitHub Actions / GitLab CI)
+- [x] Настроить CI/CD пайплайн (GitHub Actions / GitLab CI)
 - [x] Создать документацию по настройке окружения
 
 ### 1.1.2 Серверное окружение
@@ -646,11 +646,11 @@
 ## 5.5 Резервное копирование
 
 ### 5.5.1 Backup System
-- [ ] Реализовать backup PostgreSQL
-- [ ] Добавить backup MinIO/S3
-- [ ] Настроить расписание backup
-- [ ] Реализовать backup rotation
-- [ ] Протестировать restore
+- [x] Реализовать backup PostgreSQL
+- [x] Добавить backup MinIO/S3
+- [x] Настроить расписание backup
+- [x] Реализовать backup rotation
+- [x] Протестировать restore
 
 ### 5.5.2 High Availability
 - [ ] Спроектировать HA архитектуру
@@ -669,10 +669,10 @@
 - [ ] Реализовать connection pooling
 
 ### 5.6.2 Scalability
-- [ ] Горизонтальное масштабирование API servers
-- [ ] Настроить auto-scaling (Kubernetes)
-- [ ] Оптимизировать database connections
-- [ ] Реализовать caching strategy
+- [x] Горизонтальное масштабирование API servers
+- [x] Настроить auto-scaling (Kubernetes)
+- [x] Оптимизировать database connections
+- [x] Реализовать caching strategy
 
 ## 5.7 Документация
 

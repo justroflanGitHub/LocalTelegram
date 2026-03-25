@@ -201,6 +201,109 @@ services:
       App__DcOptions__0__Enabled: "true"
       App__DcOptions__0__MediaOnly: "true"
 
+  ### PostgreSQL - Database for custom services
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    networks:
+      - tg-net
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-localtelegram}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  ### Coturn - TURN/STUN server for WebRTC
+  coturn:
+    image: coturn/coturn:latest
+    restart: always
+    networks:
+      - tg-net
+    ports:
+      - "3478:3478/udp"
+      - "3478:3478/tcp"
+      - "5349:5349/tcp"   # TLS
+      - "49152-49200:49152-49200/udp"  # Relay ports
+    command:
+      - -n
+      - --log-file=stdout
+      - --min-port=49152
+      - --max-port=49200
+      - --realm=localtelegram.local
+      - --use-auth-secret
+      - --static-auth-secret=${TURN_SECRET:-localtelegram-turn-secret}
+      - --no-multicast-peers
+      - --no-cli
+
+  ################### Custom Microservices
+
+  ### Media Service - Video transcoding and streaming
+  media-service:
+    build:
+      context: ./src/server/MediaService
+      dockerfile: Dockerfile
+    restart: always
+    networks:
+      - tg-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    ports:
+      - "5006:5006"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: Host=postgres;Database=media_service;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
+      Redis__Connection: redis:6379
+      MinIO__Endpoint: minio:9000
+      MinIO__AccessKey: ${MINIO_ACCESS_KEY:-localtelegram}
+      MinIO__SecretKey: ${MINIO_SECRET_KEY:-localtelegram123456}
+      MinIO__BucketName: media
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__Username: ${RABBITMQ_USER:-localtelegram}
+      RabbitMQ__Password: ${RABBITMQ_PASSWORD:-localtelegram123}
+      Jwt__Secret: ${JWT_SECRET:-your-super-secret-key-for-jwt-token-generation-min-32-chars}
+      FFmpeg__Path: /usr/bin/ffmpeg
+      FFprobe__Path: /usr/bin/ffprobe
+    volumes:
+      - ./data/media_temp:/tmp/media_processing
+
+  ### Conference Service - Video conferencing and calls
+  conference-service:
+    build:
+      context: ./src/server/ConferenceService
+      dockerfile: Dockerfile
+    restart: always
+    networks:
+      - tg-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      coturn:
+        condition: service_started
+    ports:
+      - "5007:5007"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: Host=postgres;Database=conference_service;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
+      Redis__Connection: redis:6379
+      Jwt__Secret: ${JWT_SECRET:-your-super-secret-key-for-jwt-token-generation-min-32-chars}
+      Turn__Secret: ${TURN_SECRET:-localtelegram-turn-secret}
+      Turn__Realm: localtelegram.local
+
   ### Frontend Proxy (Optional - for web access)
   nginx:
     image: nginx:alpine
@@ -219,3 +322,5 @@ services:
       - gateway-server
       - messenger-server
       - file-server
+      - media-service
+      - conference-service

@@ -158,6 +158,35 @@ services:
       retries: 3
       start_period: 15s
 
+  ### UserService - User profiles and contacts
+  user-service:
+    build:
+      context: ./src/server/UserService
+      dockerfile: Dockerfile
+    restart: always
+    networks:
+      - tg-net
+    ports:
+      - "5005:5005"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__PostgreSQL=Host=postgres;Port=5432;Database=${DB_NAME:-localtelegram};Username=${DB_USER:-localtelegram};Password=${DB_PASSWORD:-localtelegram123}
+      - ConnectionStrings__Redis=redis:6379
+      - Jwt__SecretKey=${JWT_SECRET_KEY:-your-super-secret-key-here-min-32-characters!}
+      - Jwt__Issuer=LocalTelegram
+      - Jwt__Audience=LocalTelegram
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
   ### PostgreSQL - Database for custom services
   postgres:
     image: postgres:16-alpine

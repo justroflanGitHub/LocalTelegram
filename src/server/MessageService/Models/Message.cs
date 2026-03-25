@@ -74,6 +74,18 @@ public class MessageStatusLog
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 
+/// <summary>
+/// Represents a reaction to a message
+/// </summary>
+public class MessageReaction
+{
+    public long Id { get; set; }
+    public long MessageId { get; set; }
+    public long UserId { get; set; }
+    public string Emoji { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
 // DTOs
 public class SendMessageRequest
 {
@@ -186,4 +198,50 @@ public class GetMessagesRequest
 public class EditMessageRequest
 {
     public string Content { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Represents a reaction to a message
+/// </summary>
+public class MessageReaction
+{
+    public long Id { get; set; }
+    public long MessageId { get; set; }
+    public long UserId { get; set; }
+    public string Emoji { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// DTO for message reactions
+/// </summary>
+public class MessageReactionDto
+{
+    public string Emoji { get; set; } = string.Empty;
+    public int Count { get; set; }
+    public List<long> UserIds { get; set; } = new();
+}
+
+// Request DTOs for extended features
+public class ReplyMessageRequest
+{
+    public long ChatId { get; set; }
+    public string Content { get; set; } = string.Empty;
+}
+
+public class ForwardMessageRequest
+{
+    public long TargetChatId { get; set; }
+}
+
+public class ForwardMultipleRequest
+{
+    public List<long> MessageIds { get; set; } = new();
+    public long TargetChatId { get; set; }
+}
+
+public class AddReactionRequest
+{
+    public string Emoji { get; set; } = string.Empty;
+}
 }

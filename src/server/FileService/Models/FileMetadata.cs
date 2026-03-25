@@ -85,3 +85,46 @@ public class CompleteUploadRequest
 {
     public string UploadId { get; set; } = string.Empty;
 }
+
+/// <summary>
+/// Session for chunked file upload
+/// </summary>
+public class ChunkedUploadSession
+{
+    public string UploadId { get; set; } = string.Empty;
+    public long UploaderId { get; set; }
+    public string? FileName { get; set; }
+    public string? MimeType { get; set; }
+    public long FileSize { get; set; }
+    public string StoragePath { get; set; } = string.Empty;
+    public int ChunkSize { get; set; }
+    public int TotalChunks { get; set; }
+    public List<int> UploadedChunks { get; set; } = new();
+    public DateTime CreatedAt { get; set; }
+    public DateTime? LastChunkAt { get; set; }
+}
+
+/// <summary>
+/// Upload chunk status response
+/// </summary>
+public class ChunkUploadStatus
+{
+    public string UploadId { get; set; } = string.Empty;
+    public int TotalChunks { get; set; }
+    public int UploadedChunks { get; set; }
+    public List<int> MissingChunks { get; set; } = new();
+    public bool IsComplete => MissingChunks.Count == 0;
+}
+
+/// <summary>
+/// Preview metadata for files
+/// </summary>
+public class FilePreview
+{
+    public long FileId { get; set; }
+    public string? SmallPreviewUrl { get; set; }
+    public string? MediumPreviewUrl { get; set; }
+    public string? LargePreviewUrl { get; set; }
+    public string? VideoPreviewUrl { get; set; }
+    public string? DocumentPreviewUrl { get; set; }
+}

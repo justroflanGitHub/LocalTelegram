@@ -13,6 +13,7 @@ public class MessageDbContext : DbContext
     public DbSet<ChatMember> ChatMembers => Set<ChatMember>();
     public DbSet<Message> Messages => Set<Message>();
     public DbSet<MessageStatusLog> MessageStatusLogs => Set<MessageStatusLog>();
+    public DbSet<MessageReaction> MessageReactions => Set<MessageReaction>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -107,6 +108,25 @@ public class MessageDbContext : DbContext
             entity.HasIndex(e => e.UserId);
 
             entity.HasAlternateKey(e => new { e.MessageId, e.UserId });
+        });
+
+        // MessageReaction entity
+        modelBuilder.Entity<MessageReaction>(entity =>
+        {
+            entity.ToTable("message_reactions");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+            entity.Property(e => e.MessageId).HasColumnName("message_id").IsRequired();
+            entity.Property(e => e.UserId).HasColumnName("user_id").IsRequired();
+            entity.Property(e => e.Emoji).HasColumnName("emoji").HasMaxLength(10).IsRequired();
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.HasIndex(e => e.MessageId);
+            entity.HasIndex(e => e.UserId);
+            
+            // One user can only have one reaction per message with the same emoji
+            entity.HasAlternateKey(e => new { e.MessageId, e.UserId, e.Emoji });
         });
     }
 }

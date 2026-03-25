@@ -1,0 +1,132 @@
+# LocalTelegram Alertmanager Configuration
+
+global:
+  # SMTP configuration for email alerts
+  smtp_smarthost: 'smtp.example.com:587'
+  smtp_from: 'alerts@localtelegram.local'
+  smtp_auth_username: 'alerts@localtelegram.local'
+  smtp_auth_password: 'your-smtp-password'
+  smtp_require_tls: true
+
+  # Slack configuration (optional)
+  # slack_api_url: 'https://hooks.slack.com/services/xxx/yyy/zzz'
+
+# Templates
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# Inhibition rules - prevent certain alerts when others are firing
+inhibit_rules:
+  # If critical is firing, suppress warning
+  - source_matchers:
+      - severity="critical"
+    target_matchers:
+      - severity="warning"
+    equal: ['alertname', 'instance']
+  
+  # If service is down, suppress other alerts for that service
+  - source_matchers:
+      - alertname="ServiceDown"
+    target_matchers:
+      - severity="warning"
+    equal: ['job']
+
+# Route tree
+route:
+  # Default receiver
+  receiver: 'default-receiver'
+  
+  # Group alerts by these labels
+  group_by: ['alertname', 'severity', 'job']
+  
+  # Wait time before sending initial notification
+  group_wait: 30s
+  
+  # Wait time before sending updated notification
+  group_interval: 5m
+  
+  # Wait time before resending notification
+  repeat_interval: 4h
+
+  # Child routes
+  routes:
+    # Critical alerts - immediate notification
+    - matchers:
+        - severity="critical"
+      receiver: 'critical-alerts'
+      group_wait: 10s
+      repeat_interval: 1h
+      continue: true
+
+    # Database alerts
+    - matchers:
+        - job="postgres"
+      receiver: 'database-team'
+      group_by: ['alertname', 'instance']
+
+    # Redis alerts
+    - matchers:
+        - job="redis"
+      receiver: 'database-team'
+      group_by: ['alertname', 'instance']
+
+    # Storage alerts
+    - matchers:
+        - job=~"minio|storage"
+      receiver: 'infrastructure-team'
+      group_by: ['alertname', 'instance']
+
+    # Application alerts
+    - matchers:
+        - job=~"auth-service|message-service|file-service|push-service|user-service|media-service|conference-service|admin-service"
+      receiver: 'application-team'
+      group_by: ['alertname', 'job']
+
+# Receivers
+receivers:
+  - name: 'default-receiver'
+    # Default - log only
+    webhook_configs:
+      - url: 'http://localhost:5001/webhook/alerts'
+        send_resolved: true
+
+  - name: 'critical-alerts'
+    # Email for critical alerts
+    email_configs:
+      - to: 'admin@localtelegram.local'
+        send_resolved: true
+        headers:
+          Subject: '[CRITICAL] {{ .GroupLabels.alertname }} - LocalTelegram'
+    
+    # Slack for critical alerts
+    # slack_configs:
+    #   - channel: '#critical-alerts'
+    #     send_resolved: true
+    #     title: '{{ .Status | toUpper }}: {{ .GroupLabels.alertname }}'
+    #     text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+
+    # PagerDuty for critical alerts
+    # pagerduty_configs:
+    #   - service_key: 'your-pagerduty-key'
+    #     severity: critical
+
+  - name: 'database-team'
+    email_configs:
+      - to: 'dba@localtelegram.local'
+        send_resolved: true
+        headers:
+          Subject: '[DB] {{ .GroupLabels.alertname }} - LocalTelegram'
+
+  - name: 'infrastructure-team'
+    email_configs:
+      - to: 'infra@localtelegram.local'
+        send_resolved: true
+        headers:
+          Subject: '[INFRA] {{ .GroupLabels.alertname }} - LocalTelegram'
+
+  - name: 'application-team'
+    email_configs:
+      - to: 'dev@localtelegram.local'
+        send_resolved: true
+        headers:
+          Subject: '[APP] {{ .GroupLabels.alertname }} - LocalTelegram'

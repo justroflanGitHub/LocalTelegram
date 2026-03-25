@@ -1,0 +1,107 @@
+# LocalTelegram Monitoring Stack
+# Prometheus + Grafana + Alertmanager
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'localtelegram'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+# Rule files
+rule_files:
+  - /etc/prometheus/alert_rules.yml
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          instance: 'prometheus'
+
+  # Auth Service
+  - job_name: 'auth-service'
+    static_configs:
+      - targets: ['auth-service:5001']
+    metrics_path: /metrics
+
+  # Message Service
+  - job_name: 'message-service'
+    static_configs:
+      - targets: ['message-service:5002']
+    metrics_path: /metrics
+
+  # File Service
+  - job_name: 'file-service'
+    static_configs:
+      - targets: ['file-service:5003']
+    metrics_path: /metrics
+
+  # Push Service
+  - job_name: 'push-service'
+    static_configs:
+      - targets: ['push-service:5004']
+    metrics_path: /metrics
+
+  # User Service
+  - job_name: 'user-service'
+    static_configs:
+      - targets: ['user-service:5005']
+    metrics_path: /metrics
+
+  # Media Service
+  - job_name: 'media-service'
+    static_configs:
+      - targets: ['media-service:5006']
+    metrics_path: /metrics
+
+  # Conference Service
+  - job_name: 'conference-service'
+    static_configs:
+      - targets: ['conference-service:5007']
+    metrics_path: /metrics
+
+  # Admin Service
+  - job_name: 'admin-service'
+    static_configs:
+      - targets: ['admin-service:5008']
+    metrics_path: /metrics
+
+  # PostgreSQL Exporter
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+
+  # Redis Exporter
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+
+  # MinIO (built-in metrics)
+  - job_name: 'minio'
+    metrics_path: /minio/v2/metrics/cluster
+    static_configs:
+      - targets: ['minio:9000']
+
+  # RabbitMQ (built-in metrics)
+  - job_name: 'rabbitmq'
+    static_configs:
+      - targets: ['rabbitmq:15692']
+
+  # Node Exporter (system metrics)
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  # cAdvisor (container metrics)
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']

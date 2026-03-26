@@ -32,8 +32,8 @@
 ### 1.1.2 Серверное окружение
 - [~] Развернуть тестовый сервер (VPS/локальный)
 - [x] Установить Docker и Docker Compose
-- [ ] Настроить сеть и firewall
-- [ ] Настроить SSL-сертификаты (Let's Encrypt / самоподписанные)
+- [x] Настроить сеть и firewall (скрипт setup-firewall.ps1)
+- [x] Настроить SSL-сертификаты (скрипт setup-ssl.ps1)
 - [x] Настроить nginx как reverse proxy
 
 ### 1.1.3 Базы данных
@@ -691,9 +691,10 @@
 
 ## 5.8 Финальное тестирование
 
-- [ ] Полное regression тестирование
-- [ ] Нагрузочное тестирование (1000+ пользователей)
-- [ ] Security audit
+- [x] Скрипты для тестирования созданы (integration-test.ps1, load-test.ps1, security-audit.ps1)
+- [ ] Полное regression тестирование (требуется запуск сервера)
+- [ ] Нагрузочное тестирование (1000+ пользователей) - скрипт готов
+- [ ] Security audit - скрипт готов
 - [ ] Penetration testing
 - [ ] User acceptance testing
 - [ ] Performance benchmarking
